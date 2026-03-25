@@ -38,24 +38,23 @@
 
 ## 1. Executive Summary
 
-> *"The world's first open-source post-quantum cryptography ASIC on SkyWater 130nm — a production-ready reference platform for the billions of IoT devices that must migrate to quantum-safe cryptography before 2030."*
+> *"Post-Quantum Secure IoT SoC using Caravel Open Silicon Platform"*
 
 Quantum computers are advancing rapidly. When they arrive at scale, every asymmetric cryptographic system in use today — RSA, ECDH, ECDSA — will be broken by Shor's algorithm. [NIST finalized FIPS 203, 204, and 205](https://csrc.nist.gov/publications/fips) on **August 13, 2024**, delivering the world's first post-quantum cryptography (PQC) standards. [NSA's CNSA 2.0 suite](https://media.defense.gov/2022/Sep/07/2003071834/-1/-1/0/CSA_CNSA_2.0_ALGORITHMS_.PDF) is already in effect.
 
-**This project delivers a silicon-proven, open-source PQC hardware accelerator** — a RISC-V SoC with tightly-coupled Keccak-f[1600] + NTT ISA extensions — targeting the [SkyWater SKY130 130nm open process](https://github.com/google/skywater-pdk). It is designed to serve the billions of IoT, automotive, medical, and defense devices that must transition to quantum-safe cryptography within the decade.
+**This project aims to deliver an open-source PQC-secure SoC** — a RISC-V–based SoC with integrated Keccak-f[1600] and NTT accelerators — targeting IoT applications. It will be designed for the [SkyWater SKY130 130nm open process](https://github.com/google/skywater-pdk) on Carvel framework to ensure reproducibility and facilitate further development within the open-source community.
+
 
 ### At a Glance
 
 | Attribute | Value |
 |---|---|
 | **Target Process** | SkyWater SKY130 (130nm open PDK) |
-| **Core Architecture** | RISC-V RV32IMC + tightly-coupled ISA extensions |
-| **Accelerated Primitives** | Keccak-f[1600] (SHAKE-128/256, SHA3-256/512) + Parameterizable NTT |
-| **Covered Standards** | FIPS 203 (ML-KEM), FIPS 204 (ML-DSA), FIPS 205 (SLH-DSA) |
-| **Estimated Die Area** | 3.5–6.0 mm² (NTT + Keccak + SRAM, within 10 mm² budget) |
-| **Speedup over Software** | 5–10× (tightly-coupled ISA extensions) |
-| **On-chip SRAM** | ~7–10 kB |
-| **Novelty** | First open-source PQC ASIC on SKY130 — a world-first |
+| **Platform** | Caravel SoC Framework |
+| **Accelerated Primitives** | Keccak-f[1600] (SHAKE-128/256, SHA3-256/512) + NTT |
+| **Covered Standards** | FIPS 203 (ML-KEM), FIPS 204 (ML-DSA) |
+| **Speedup over Software** | 5–10× |
+| **Novelty** | A PQC-Secure SoC targeting IoT applications |
 
 ---
 
@@ -73,25 +72,25 @@ Unlike servers that can be patched overnight, **IoT devices have field lifetimes
 - A medical implant certified in 2025 may not receive a firmware update for its entire service life
 - Smart grid controllers operate for decades with no practical path to key rotation
 
-If these devices are not shipped with post-quantum cryptography, they will be cryptographically broken before they are decommissioned.
+If these devices are not shipped with post-quantum cryptography, they will be cryptographically broken before they are decommissioned. 
 
-### Engineers face three concrete pain points
+### Challenges in Deploying ML-DSA and ML-KEM on Constrained Devices
 
 **1. Compute overhead** — ML-DSA-44 signing takes ~60 ms on a Cortex-M4 at 168 MHz, compared to 9.4 ms for ECDSA. Without acceleration, PQC is too slow for latency-critical applications like V2X safety messaging.
 
 **2. Size explosion** — ML-DSA-44 signatures are 2,420 bytes versus 64 bytes for ECDSA P-256 — a **38× increase**. This creates severe bandwidth problems on LoRa, NB-IoT, and constrained V2X channels, and causes certificate chain bloat in TLS.
 
-**3. Memory pressure** — FALCON (FN-DSA) requires 117–157 KB of stack, exceeding the total RAM of many Cortex-M4 targets. Even ML-KEM requires careful SRAM management on constrained microcontrollers.
+**3. Memory pressure** — ML-KEM requires careful SRAM management on constrained microcontrollers.
 
 ### The open-source gap
 
-No production-ready, open-source PQC hardware core exists for ASIC fabrication. The entire open-source PQC hardware ecosystem consists of **academic FPGA prototypes** — none have been taped out on silicon. This project fills that gap.
+No production-ready, open-source PQC hardware core exists for ASIC fabrication. The entire open-source PQC hardware ecosystem focuces more on **academic FPGA prototypes** — complete industry ready prototypes targeting IoT devices are still missing. This project fills that gap.
 
 ---
 
 ## 3. Market Opportunity
 
-The PQC hardware market is nascent, explosive, and driven by non-negotiable regulatory deadlines.
+The PQC hardware market is still emerging but rapidly accelerating, with governments worldwide placing strong emphasis on the development and deployment of quantum-resistant systems.
 
 ### Market Sizing
 
@@ -112,12 +111,6 @@ IoT / Edge Slice 2030:      $168M – $930M
 ```
 
 **Lattice-based cryptography** — the family covering ML-KEM and ML-DSA — dominates at ~48% of hardware revenue. North America leads regionally at 37–38% market share.
-
-### The Regulatory Inflection Point
-
-The market is not growing organically — it is being **forced** by regulation. NIST's deprecation of RSA/ECC by 2030 and full disallowance by 2035 will trigger a mandatory hardware refresh cycle across billions of devices. The U.S. White House has earmarked **$7.1 billion** for federal PQC migration alone.
-
----
 
 ## 4. Regulatory Mandate Timeline
 
@@ -213,7 +206,7 @@ The 5–10× speedup from tightly-coupled ISA extensions brings ML-DSA signing f
 
 ---
 
-## 7. Algorithm Deep Dive — ML-KEM, ML-DSA, SLH-DSA
+## 7. Algorithm Deep Dive — ML-KEM, ML-DSA
 
 ### 7.1 ML-KEM — FIPS 203 (Key Encapsulation Mechanism)
 
@@ -271,7 +264,7 @@ Keccak / SHAKE:  ~43% of ML-DSA execution time
 NTT / INTT:      ~35–40% of ML-DSA execution time
 ```
 
-**Hash primitives in ML-DSA (KMAC not used):**
+**Hash primitives in ML-DSA:**
 
 | Primitive | Used For |
 |---|---|
@@ -280,41 +273,9 @@ NTT / INTT:      ~35–40% of ML-DSA execution time
 
 **Critical hardware insight (Truong et al., 2024):** Rather than a unified SHAKE-128/256 core as in prior works, using two independent Keccak modules — a **double 96-bit datapath core for SHAKE-128** and a **single 64-bit core for SHAKE-256** — allows simultaneous matrix expansion and secret vector generation, substantially reducing overall latency.
 
-### 7.3 SLH-DSA — FIPS 205 (Hash-Based Signatures)
-
-[SLH-DSA](https://csrc.nist.gov/pubs/fips/205/final), from SPHINCS+, is pure hash-based. It has the smallest keys (32–64 B) but enormous signatures (7.8–49.9 KB) and slow signing. Hashing constitutes ~99% of computation.
-
-- **SLH-DSA-SHAKE** family → uses SHAKE-256 exclusively → **directly benefits from Keccak hardware**
-- **SLH-DSA-SHA2** family → uses SHA-256 / SHA-512 → requires separate SHA-2 hardware
-
-### 7.4 Size Comparison: Post-Quantum vs. Classical
-
-| Metric | Classical | Post-Quantum | Expansion |
-|---|---|---|---|
-| Signature | ECDSA P-256: 64 B | ML-DSA-44: 2,420 B | **38×** |
-| Public key | ECC P-256: 64 B | ML-DSA-44: 1,312 B | **20×** |
-| KEM ciphertext | ECDH P-256: 64 B | ML-KEM-768: 1,088 B | **17×** |
-| Hash-based signature | — | SLH-DSA: up to 49.9 KB | — |
-
-These increases cascade into bandwidth saturation on constrained networks, certificate chain bloat in TLS, SRAM exhaustion on microcontrollers, and BRAM pressure on FPGAs.
-
 ---
 
 ## 8. Core Architecture
-
-### Design Decision: Tightly-Coupled ISA Extensions
-
-Three architectural approaches were evaluated for IoT PQC acceleration:
-
-| Architecture | Speedup | Crypto-Agility | Best For |
-|---|---|---|---|
-| Full Hardware ASIC | 100–250× | ❌ Zero post-fab | High-volume fixed-function (SIM, smart cards) |
-| Loosely-Coupled Accelerator (AXI/APB bus) | 2.7–3.6× | ✅ Full | Capped by bus overhead — not competitive |
-| **Tightly-Coupled ISA Extensions** | **5–10×** | **✅ Full** | **Recommended for IoT/edge** |
-
-**Why tightly-coupled wins:** Bus communication overhead in loosely-coupled designs caps speedup at ~3×. Tightly-coupled extensions bypass this entirely — the accelerator operates at CPU clock speed with direct register file access and zero bus latency.
-
-**Why not full hardware ASIC:** PQC standardization is still evolving. FN-DSA (FALCON) is expected late 2026/2027. HQC was selected as a fifth NIST standard March 2025. A fixed-function ASIC cannot adapt — a serious long-term risk for any device deployed today.
 
 ### SoC Block Diagram
 
@@ -324,11 +285,11 @@ Three architectural approaches were evaluated for IoT PQC acceleration:
 │                                                                      │
 │  ┌──────────────────┐    ┌─────────────────────────────────────────┐ │
 │  │  RISC-V Core     │◄──►│      Tightly-Coupled Accelerator Unit   │ │
-│  │  (RV32IMC)       │    │                                         │ │
+│  │                  │    │                                         │ │
 │  │                  │    │  ┌───────────────────┐ ┌─────────────┐  │ │
-│  │  Custom ISA      │    │  │  Keccak-f[1600]   │ │  NTT Unit   │  │ │
-│  │  Extensions      │    │  │                   │ │             │  │ │
-│  │  (CV-X-IF)       │    │  │  Rate-configurable│ │  q=3329     │  │ │
+│  │                  │    │  │  Keccak-f[1600]   │ │  NTT Unit   │  │ │
+│  │                  │    │  │                   │ │             │  │ │
+│  │                  │    │  │  Rate-configurable│ │  q=3329     │  │ │
 │  └──────────────────┘    │  │  SHAKE-128/256    │ │  q=8380417  │  │ │
 │                          │  │  SHA3-256/512     │ │  (param.)   │  │ │
 │  ┌──────────────────┐    │  │  20–25 kGE        │ │  15–30 kGE  │  │ │
